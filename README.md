@@ -53,6 +53,17 @@ Fazit: ein kleiner, in beiden Zeiträumen sichtbarer Vorsprung gegenüber andere
 
 Das Repository ist öffentlich, also sind der Code und die täglichen Marktauswertungen für alle sichtbar. Ihre Käufe sind nicht darin. Das ntfy-Thema steht nur im GitHub-Secret und darf nicht in eine Datei des Repositorys.
 
+## Auswertung von Hand starten
+
+Unter „Mehr → Auswertung von Hand“ startet ein Knopf den Cloud-Lauf sofort und zeigt, wann er fertig ist. Dafür braucht die App einmalig einen GitHub-Schlüssel (Fine-grained Personal Access Token), am besten direkt auf dem iPhone angelegt:
+
+1. https://github.com/settings/personal-access-tokens/new öffnen, Name z. B. „Krypto-Radar App“, Ablauf z. B. 1 Jahr.
+2. Repository access: „Only select repositories“ → `krypto-radar`.
+3. Permissions: nur „Actions“ mit „Read and write“.
+4. „Generate token“, kopieren und in der App einfügen.
+
+Der Schlüssel bleibt nur auf dem iPhone (nicht in der Datensicherung) und darf nur Läufe starten. Neue Ergebnisse gibt es erst nach dem Tagesschluss (2:00 Uhr, im Winter 1:00 Uhr); tagsüber liefert ein Lauf dasselbe Ergebnis. Läuft der Schlüssel ab, legen Sie einen neuen an.
+
 ## Einstellungen (`einstellungen.json`)
 
 | Schlüssel | Bedeutung |

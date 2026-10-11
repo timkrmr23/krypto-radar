@@ -15,6 +15,9 @@ const DAY_MS = 86400000;
 const TICKERS_MAX_AGE = 60000;
 const CHART_DAYS = 180;
 const MARKER_AMOUNT = 1000;
+const GITHUB_API = 'https://api.github.com';
+const WORKFLOW = 'radar.yml';
+const TOKEN_KEY = 'krypto-radar-github'; // GitHub-Schlüssel: nur auf diesem Gerät, nicht in der Datensicherung
 
 const state = {
   stand: null,        // daten/stand.json: Coinliste, Strategie und Musterkennzahlen (täglich aus der Cloud)
@@ -33,6 +36,7 @@ const state = {
   socketKey: '',
   liveTimer: null,
   renderToken: 0,
+  run: { phase: 'idle', text: '', url: '' }, // Auswertung von Hand: idle, starting, queued, running, done, error
 };
 
 // ---------- Hilfsfunktionen ----------
@@ -71,6 +75,10 @@ function fmtDate(value) {
 function fmtMonth(value) {
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00Z`);
   return date.toLocaleDateString('de-DE', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+function fmtClock(date) {
+  return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
 function fmtEur(value) {
@@ -1241,6 +1249,154 @@ function updateMusterBadge() {
   else delete badge.dataset.count;
 }
 
+// ---------- Auswertung von Hand starten (GitHub Actions) ----------
+
+function repoName() {
+  const [owner] = location.hostname.split('.');
+  const [repo] = location.pathname.split('/').filter(Boolean);
+  return location.hostname.endsWith('.github.io') && repo ? `${owner}/${repo}` : null;
+}
+
+function githubToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+async function github(path, { method = 'GET', body = null, token = githubToken() } = {}) {
+  const response = await fetch(`${GITHUB_API}/repos/${repoName()}${path}`, {
+    method,
+    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  });
+  if (response.status === 401) throw new Error('Der Schlüssel ist ungültig oder abgelaufen.');
+  if (response.status === 403 || response.status === 404) throw new Error('Der Schlüssel darf die Auswertung nicht starten. Fehlt die Berechtigung „Actions: Read and write“ für krypto-radar?');
+  if (!response.ok) throw new Error(`GitHub antwortet mit Fehler ${response.status}.`);
+  return response.status === 204 ? null : response.json();
+}
+
+function setRun(phase, text, url = '') {
+  state.run = { phase, text, url };
+  const box = $('#run-box');
+  if (box) fillRunBox(box);
+}
+
+function runBusy() {
+  return ['starting', 'queued', 'running'].includes(state.run.phase);
+}
+
+async function startRun() {
+  if (runBusy()) return;
+  const since = Date.now();
+  setRun('starting', 'Starte die Auswertung …');
+  try {
+    await github(`/actions/workflows/${WORKFLOW}/dispatches`, { method: 'POST', body: { ref: 'main' } });
+    await followRun(since);
+  } catch (error) {
+    setRun('error', `Nicht gestartet: ${error.message}`, state.run.url);
+  }
+}
+
+// Fortschritt abfragen, bis der Lauf fertig ist; danach die neuen Daten laden
+async function followRun(since) {
+  const deadline = Date.now() + 15 * 60000;
+  let run = null;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, run ? 10000 : 4000));
+    const data = await github(`/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=5`);
+    run = data.workflow_runs.find((item) => Date.parse(item.created_at) >= since - 60000) || null;
+    if (!run) {
+      setRun('queued', 'Auftrag angenommen, GitHub bereitet den Lauf vor …');
+    } else if (run.status !== 'completed') {
+      const started = run.run_started_at ? fmtClock(new Date(run.run_started_at)) : null;
+      setRun(run.status === 'in_progress' ? 'running' : 'queued',
+        run.status === 'in_progress' ? `Läuft seit ${started} Uhr, dauert etwa 2 Minuten …` : 'Wartet auf einen freien Platz bei GitHub …', run.html_url);
+    } else if (run.conclusion === 'success') {
+      state.muster.clear();
+      await Promise.all([loadStand(), loadSignale()]);
+      setRun('done', `Fertig um ${fmtClock(new Date(run.updated_at))} Uhr. Stand: Tagesschluss ${fmtDate(state.stand?.as_of)}.`, run.html_url);
+      return;
+    } else {
+      setRun('error', `Die Auswertung ist fehlgeschlagen (${run.conclusion}).`, run.html_url);
+      return;
+    }
+  }
+  setRun('error', 'Keine Rückmeldung von GitHub. Ob der Lauf geklappt hat, sehen Sie unter „Details bei GitHub“.', run?.html_url || '');
+}
+
+async function saveToken(value, status) {
+  const token = value.trim();
+  if (!token) return;
+  status.textContent = 'Prüfe den Schlüssel …';
+  try {
+    await github(`/actions/workflows/${WORKFLOW}`, { token });
+    localStorage.setItem(TOKEN_KEY, token);
+    toast('Schlüssel gespeichert');
+    fillRunBox($('#run-box'));
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+function fillRunBox(box) {
+  box.replaceChildren();
+  box.append(el('p', null, 'Die Auswertung läuft jeden Morgen von selbst. Neue Ergebnisse gibt es erst nach dem Tagesschluss (2:00 Uhr, im Winter 1:00 Uhr). Tagsüber liefert ein Lauf dasselbe Ergebnis wie am Morgen.'));
+  if (!repoName()) {
+    box.append(el('p', null, 'Das Starten von Hand funktioniert nur in der veröffentlichten App (github.io).'));
+    return;
+  }
+  if (!githubToken()) {
+    const link = el('a', null, 'Neuen Schlüssel bei GitHub anlegen');
+    link.href = 'https://github.com/settings/personal-access-tokens/new';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    const steps = el('ol', null,
+      el('li', null, link, ' (am besten hier auf dem iPhone, in Safari bei GitHub angemeldet).'),
+      el('li', null, 'Name z. B. „Krypto-Radar App“, Ablauf z. B. 1 Jahr.'),
+      el('li', null, 'Repository access: „Only select repositories“ → krypto-radar.'),
+      el('li', null, 'Permissions: „Actions“ mit „Read and write“ hinzufügen. Sonst nichts.'),
+      el('li', null, '„Generate token“, den Schlüssel kopieren und hier einfügen.'));
+    steps.style.paddingLeft = '20px';
+    const field = input({ type: 'password', placeholder: 'github_pat_…', autocomplete: 'off', spellcheck: false });
+    const status = el('p', 'small down');
+    const save = el('button', 'button primary full', 'Schlüssel speichern');
+    save.type = 'button';
+    save.addEventListener('click', () => saveToken(field.value, status));
+    box.append(el('p', null, el('strong', null, 'Einmalig einrichten: '), 'Die App braucht einen GitHub-Schlüssel, der nur das Auswerten starten darf. Er bleibt nur auf diesem iPhone.'),
+      steps, el('label', 'field', el('span', null, 'GitHub-Schlüssel'), field), status, save);
+    return;
+  }
+  const button = el('button', 'button primary full', runBusy() ? 'Läuft …' : 'Auswertung jetzt starten');
+  button.type = 'button';
+  button.disabled = runBusy();
+  button.addEventListener('click', startRun);
+  box.append(button);
+  if (state.run.text) {
+    box.append(el('p', `small ${state.run.phase === 'error' ? 'down' : state.run.phase === 'done' ? 'up' : ''}`, state.run.text));
+  }
+  if (state.run.url) {
+    const details = el('a', 'small', 'Details bei GitHub');
+    details.href = state.run.url;
+    details.target = '_blank';
+    details.rel = 'noopener';
+    box.append(el('p', null, details));
+  }
+  const remove = el('button', 'button danger full', 'Schlüssel entfernen');
+  remove.type = 'button';
+  remove.style.marginTop = '8px';
+  remove.addEventListener('click', () => {
+    if (!window.confirm('GitHub-Schlüssel von diesem iPhone entfernen?')) return;
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch { /* nichts gespeichert */ }
+    fillRunBox(box);
+  });
+  box.append(remove);
+}
+
 // ---------- Mehr ----------
 
 function renderMehr() {
@@ -1248,6 +1404,10 @@ function renderMehr() {
   watch([]);
   const nodes = [];
   const updated = state.stand?.updated ? new Date(state.stand.updated).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  const runBox = el('div', 'card explain');
+  runBox.id = 'run-box';
+  fillRunBox(runBox);
+  nodes.push(...section('Auswertung von Hand', runBox));
   nodes.push(...section('Benachrichtigungen', el('div', 'card explain',
     el('p', null, 'Neue Muster meldet die App über die kostenlose App „ntfy“. Installieren Sie ntfy aus dem App Store und abonnieren Sie dort Ihr persönliches Thema. Den Namen des Themas erhalten Sie bei der Einrichtung.'),
     el('p', null, 'Ein Tippen auf die Nachricht öffnet den Coin hier in der App.'))));
