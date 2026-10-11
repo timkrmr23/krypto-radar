@@ -1410,7 +1410,7 @@ function renderMehr() {
   nodes.push(...section('Auswertung von Hand', runBox));
   nodes.push(...section('Benachrichtigungen', el('div', 'card explain',
     el('p', null, 'Neue Muster meldet die App über die kostenlose App „ntfy“. Installieren Sie ntfy aus dem App Store und abonnieren Sie dort Ihr persönliches Thema. Den Namen des Themas erhalten Sie bei der Einrichtung.'),
-    el('p', null, 'Ein Tippen auf die Nachricht öffnet den Coin hier in der App.'))));
+    el('p', null, 'Ein Tippen auf die Nachricht öffnet den Coin in Safari, mit Kurs, Strategie und Muster. Ihre Käufe sehen Sie nur hier in der App über das Radar-Symbol, denn das iPhone trennt die Daten von Safari und App.'))));
 
   const exportButton = el('button', 'button full', 'Daten sichern (Datei)');
   exportButton.type = 'button';

@@ -19,7 +19,7 @@ Käufe und Marker bleiben nur auf dem iPhone (im Speicher der Web-App). Unter �
 |---|---|---|
 | Web-App (`web/`) | GitHub Pages | Oberfläche; Kurse holt sie direkt von Binance |
 | Cloud-Lauf (`radar/scan.py`) | GitHub Actions, täglich 07:05 UTC | lädt die Tageskerzen aller Coins, wertet Strategie und Muster aus, schreibt `web/daten/` und sendet Benachrichtigungen |
-| Benachrichtigungen | ntfy.sh | Nachricht aufs iPhone; ein Tippen öffnet den Coin in der App |
+| Benachrichtigungen | ntfy.sh | Nachricht aufs iPhone; ein Tippen öffnet den Coin in Safari (Käufe nur in der App über das Symbol) |
 
 Die Mustersuche (`radar/muster.py`) vergleicht den Verlauf der letzten 20 Tage eines Coins mit seiner eigenen Vergangenheit, und zwar mit der Form: Lage und Schwankungsbreite sind herausgerechnet. Jede frühere Phase zählt einmal, und nur Phasen, deren Ausgang feststand. Dieselben Bausteine nutzt die Prüfung in `analyse/`.
 
