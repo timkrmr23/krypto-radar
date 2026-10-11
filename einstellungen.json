@@ -1,0 +1,18 @@
+{
+  "app_url": "https://timkrmr23.github.io/krypto-radar/",
+  "min_volume_usdt": 1000000,
+  "min_days": 400,
+  "muster": {
+    "length": 20,
+    "horizon": 10,
+    "min_count": 6,
+    "share": 0.9,
+    "median": 0.10,
+    "nur_wenn_bitcoin_ueber_linie": true,
+    "melden": true
+  },
+  "strategie": {
+    "melden": true,
+    "coins": ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "LINK", "DOT", "LTC", "BCH", "AVAX", "UNI", "AAVE", "FIL", "SHIB"]
+  }
+}

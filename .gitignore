@@ -1,0 +1,6 @@
+# Täglich neu berechnet (Cloud-Lauf); der Verlauf der Meldungen liegt in verlauf/
+web/daten/
+kursdaten/
+__pycache__/
+*.pyc
+.claude/

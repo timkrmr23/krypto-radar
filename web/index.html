@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c1016" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Krypto-Radar">
+  <meta name="description" content="Binance-Coins, Ihre Käufe und Muster aus der Vergangenheit">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <title>Krypto-Radar</title>
+</head>
+<body>
+  <header class="top" id="top">
+    <button class="back" id="back" type="button" aria-label="Zurück">
+      <svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Zurück
+    </button>
+    <h1 id="title">Krypto-Radar</h1>
+    <span class="top-status" id="top-status"></span>
+  </header>
+
+  <main id="view"><p class="loading">Lade …</p></main>
+
+  <nav class="tabs" aria-label="Bereiche">
+    <a href="#/" data-tab="start">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Start
+    </a>
+    <a href="#/coins" data-tab="coins">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 8h4a2 2 0 0 1 0 4h-4m0 0h4.5a2 2 0 0 1 0 4H9.5V8m1.5-2v2m2-2v2m-2 8v2m2-2v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Coins
+    </a>
+    <a href="#/muster" data-tab="muster">
+      <span class="count" id="muster-count">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 3 5-7 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 21h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </span>
+      Muster
+    </a>
+    <a href="#/mehr" data-tab="mehr">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>
+      Mehr
+    </a>
+  </nav>
+
+  <dialog class="sheet" id="sheet"></dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
